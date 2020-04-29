@@ -32,7 +32,7 @@ def index():
 
     #loop all in City db to take live info
     cursor.execute("SELECT name FROM City")
-    all_cities_already_in_db = cursor.fetchone() #me duhen vetem emrat e qyteteve jo bashke me id
+    all_cities_already_in_db = cursor.fetchall() #me duhen vetem emrat e qyteteve jo bashke me id
     
     weather_data_for_cities = []
     for iteneration_city_in_db in all_cities_already_in_db:
