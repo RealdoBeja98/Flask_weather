@@ -1,11 +1,10 @@
-from flask import Flask, request, redirect, render_template, url_for
+from flask import Flask, request, redirect, session, flash, render_template, url_for
 import sqlite3
 import requests
 import pandas as pd
-from collections import defaultdict
-from goto import with_goto
 
 app = Flask(__name__)
+app.secret_key = '8c3c2e3f20a4478f98b4ccaa5b50ce1f'
 # connect to database
 conn = sqlite3.connect('weather.db', check_same_thread=False)
 # create cursor
@@ -25,16 +24,23 @@ def index_get():
     # loop all in City db to take live info
     cursor.execute("SELECT name FROM City")
     all_cities_already_in_db = cursor.fetchall()
-    if all_cities_already_in_db is None:
+    if not all_cities_already_in_db:
         return render_template('weather.html')
     else:
         weather_data_for_cities = []
-        print(all_cities_already_in_db)
         take_cities_from_tuple = pd.DataFrame(all_cities_already_in_db)
         list_of_cities_from_tuple = take_cities_from_tuple[0].tolist()
 
         for iteneration_city_in_db in list_of_cities_from_tuple:
             respond_from_web = requests.get(url.format(iteneration_city_in_db)).json()
+            code_error = respond_from_web.get('cod')
+            convert_code_error = int(code_error)
+            if convert_code_error == 404:
+                cursor.execute("DELETE FROM City WHERE name=?",(iteneration_city_in_db,))
+                conn.commit()
+                flash("City does not exists", "danger")
+                return redirect(url_for('index_get'))
+
             weather = {
             'city': iteneration_city_in_db,
             'temperature': respond_from_web['main']['temp'],
@@ -57,7 +63,15 @@ def index_post():
             sql = "INSERT INTO City (name) VALUES ('{}')".format(city_taken_from_addbutton)
             cursor.execute(sql)
             conn.commit()
-        return redirect(url_for('index_get'))
+            return redirect(url_for('index_get'))
+        else:
+            return redirect(url_for('index_get'))
+            
+@app.route('/delete/<name>')
+def delete_city(name):
+    cursor.execute("DELETE FROM City WHERE name=?", (name,))
+    conn.commit()
+    return redirect(url_for('index_get'))
 
 
 if __name__ == '__main__':
