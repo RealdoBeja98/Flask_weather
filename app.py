@@ -25,22 +25,25 @@ def index_get():
     # loop all in City db to take live info
     cursor.execute("SELECT name FROM City")
     all_cities_already_in_db = cursor.fetchall()
-    weather_data_for_cities = []
-    print(all_cities_already_in_db)
-    take_cities_from_tuple = pd.DataFrame(all_cities_already_in_db)
-    list_of_cities_from_tuple = take_cities_from_tuple[0].tolist()
+    if all_cities_already_in_db is None:
+        return render_template('weather.html')
+    else:
+        weather_data_for_cities = []
+        print(all_cities_already_in_db)
+        take_cities_from_tuple = pd.DataFrame(all_cities_already_in_db)
+        list_of_cities_from_tuple = take_cities_from_tuple[0].tolist()
 
-    for iteneration_city_in_db in list_of_cities_from_tuple:
-        respond_from_web = requests.get(url.format(iteneration_city_in_db)).json()
-        weather = {
-        'city': iteneration_city_in_db,
-        'temperature': respond_from_web['main']['temp'],
-        'description': respond_from_web['weather'][0]['description'],
-        'icon': respond_from_web['weather'][0]['icon'],
-        }
-        weather_data_for_cities.append(weather)
+        for iteneration_city_in_db in list_of_cities_from_tuple:
+            respond_from_web = requests.get(url.format(iteneration_city_in_db)).json()
+            weather = {
+            'city': iteneration_city_in_db,
+            'temperature': respond_from_web['main']['temp'],
+            'description': respond_from_web['weather'][0]['description'],
+            'icon': respond_from_web['weather'][0]['icon'],
+            }
+            weather_data_for_cities.append(weather)
 
-    return render_template('weather.html', weather_data_for_cities=weather_data_for_cities)
+        return render_template('weather.html', weather_data_for_cities=weather_data_for_cities)
 
 
 @app.route('/', methods= ['POST'])
